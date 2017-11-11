@@ -14,10 +14,6 @@ module.exports = function(lando) {
   var os = require('os');
   var path = require('path');
 
-  // Fixed location of our util service compose file
-  var utilDir = path.join(lando.config.userConfRoot, 'util');
-  var utilFile = path.join(utilDir, 'util.yml');
-
   // Registry of init methods
   var registry = {};
 
@@ -36,80 +32,6 @@ module.exports = function(lando) {
    */
   var add = function(name, module) {
     registry[name] = module;
-  };
-
-  /*
-   * Helper to start util service
-   */
-  var utilService = function(name, app) {
-
-    // Let's get a service container
-    var util = {
-      image: 'devwithlando/util:stable',
-      environment: {
-        LANDO: 'ON',
-        LANDO_HOST_OS: lando.config.os.platform,
-        LANDO_HOST_UID: lando.config.engineId,
-        LANDO_HOST_GID: lando.config.engineGid,
-        LANDO_HOST_IP: lando.config.env.LANDO_ENGINE_REMOTE_IP,
-        LANDO_WEBROOT_USER: 'www-data',
-        LANDO_WEBROOT_GROUP: 'www-data',
-        LANDO_WEBROOT_UID: '33',
-        LANDO_WEBROOT_GID: '33',
-        LANDO_MOUNT: '/app',
-        COLUMNS: 256,
-        TERM: 'xterm'
-      },
-      command: ['tail', '-f', '/dev/null'],
-      entrypoint: '/lando-entrypoint.sh',
-      labels: {
-        'io.lando.container': 'TRUE',
-        'io.lando.service-container': 'TRUE'
-      },
-      volumes: [
-        '$LANDO_ENGINE_SCRIPTS_DIR/lando-entrypoint.sh:/lando-entrypoint.sh',
-        '$LANDO_ENGINE_SCRIPTS_DIR/user-perms.sh:/user-perms.sh',
-        '$LANDO_ENGINE_SCRIPTS_DIR/load-keys.sh:/load-keys.sh'
-      ]
-    };
-
-    // Set up our scripts
-    // @todo: get volumes above into this
-    var scripts = ['lando-entrypoint.sh', 'user-perms.sh', 'load-keys.sh'];
-    _.forEach(scripts, function(script) {
-      fs.chmodSync(path.join(lando.config.engineScriptsDir, script), '755');
-    });
-
-    // Add important ref points
-    var shareMode = (process.platform === 'darwin') ? ':delegated' : '';
-    util.volumes.push(app + ':/app' + shareMode);
-    util.volumes.push('$LANDO_ENGINE_HOME:/user' + shareMode);
-
-    // Build and export compose
-    var service = {
-      version: '3.2',
-      services: {
-        util: util
-      }
-    };
-
-    // Log
-    lando.log.debug('Run util service %j', service);
-    lando.utils.compose(utilFile, service);
-
-    // Name the project
-    var project = 'landoinit' + name;
-
-    // Try to start the util
-    return {
-      project: project,
-      compose: [utilFile],
-      container: [lando.utils.dockerComposify(project), 'util', '1'].join('_'),
-      opts: {
-        services: ['util']
-      }
-    };
-
   };
 
   /*
@@ -137,7 +59,7 @@ module.exports = function(lando) {
   var run = function(name, app, cmd, user) {
 
     // Get the service
-    var service = utilService(name, app);
+    var service = lando.utils.utilService(name, app);
 
     // Build out our run
     var run = {
@@ -175,7 +97,7 @@ module.exports = function(lando) {
   var kill = function(name, app) {
 
     // Get the service
-    var service = utilService(name, app);
+    var service = lando.utils.utilService(name, app);
 
     // Check if we have a container
     return lando.engine.exists(service)
