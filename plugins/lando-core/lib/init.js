@@ -53,67 +53,6 @@ module.exports = function(lando) {
     ].join(' ');
   };
 
-  /*
-   * Run a command during the init process
-   */
-  var run = function(name, app, cmd, user) {
-
-    // Get the service
-    var service = lando.utils.utilService(name, app);
-
-    // Build out our run
-    var run = {
-      id: service.container,
-      compose: service.compose,
-      project: service.project,
-      cmd: cmd,
-      opts: {
-        mode: 'attach',
-        user: user || 'www-data',
-        services: service.opts.services || ['util']
-      }
-    };
-
-    // Start the container
-    return lando.engine.start(service)
-
-    // On linux lets provide a little delay to make sure our user is set up
-    .then(function() {
-      if (process.platform === 'linux') {
-        return lando.Promise.delay(1000);
-      }
-    })
-
-    // Exec
-    .then(function() {
-      return lando.engine.run(run);
-    });
-
-  };
-
-  /*
-   * Helper to kill any running util processes
-   */
-  var kill = function(name, app) {
-
-    // Get the service
-    var service = lando.utils.utilService(name, app);
-
-    // Check if we have a container
-    return lando.engine.exists(service)
-
-    // Killing in the name of
-    .then(function(exists) {
-      if (exists) {
-        return lando.engine.stop(service)
-        .then(function() {
-          return lando.engine.destroy(service);
-        });
-      }
-    });
-
-  };
-
   /**
    * The core init method
    */
@@ -157,8 +96,6 @@ module.exports = function(lando) {
     build: build,
     createKey: createKey,
     get: get,
-    kill: kill,
-    run: run,
     yaml: yaml
   };
 

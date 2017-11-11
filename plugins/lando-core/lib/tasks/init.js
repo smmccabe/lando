@@ -116,7 +116,7 @@ module.exports = function(lando) {
 
       // Kill any build containers if needed
       .then(function() {
-        return lando.init.kill(config.name, options.destination);
+        return lando.utils.killUtil(config.name, options.destination);
       })
 
       // Check to see if our recipe provides additional yaml augment

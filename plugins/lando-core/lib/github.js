@@ -216,7 +216,7 @@ module.exports = function(lando) {
     return Promise.try(function() {
       if (!fs.existsSync(path.join(lando.config.userConfRoot, 'keys', key))) {
         lando.log.verbose('Creating key %s for GitHub', key);
-        return lando.init.run(name, dest, lando.init.createKey(key));
+        return lando.utils.runUtil(name, dest, lando.init.createKey(key));
       }
       else {
         lando.log.verbose('Key %s exists for GitHub', key);
@@ -225,7 +225,7 @@ module.exports = function(lando) {
 
     // Refresh keys
     .then(function() {
-      return lando.init.run(name, dest, '/load-keys.sh', 'root');
+      return lando.utils.runUtil(name, dest, '/load-keys.sh', 'root');
     })
 
     // Post SSH key to github
@@ -285,7 +285,7 @@ module.exports = function(lando) {
     // Git clone the project
     .then(function() {
       var cmd = 'cd $LANDO_MOUNT && git clone ' + repo + ' ./';
-      return lando.init.run(name, dest, cmd);
+      return lando.utils.runUtil(name, dest, cmd);
     });
 
   };
