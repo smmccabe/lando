@@ -21,7 +21,7 @@ if [ ! -f "/certs/cert.pem" ]; then
 
   # Generate the cert
   openssl genrsa -out /certs/cert.key 2048 && \
-  openssl req -new -x509 -key /certs/cert.key -out /certs/cert.crt -days 365 -subj "/C=US/ST=California/L=San Francisco/O=Lando/OU=KB/CN=${LANDO_SERVICE_TYPE}" && \
+  openssl req -new -x509 -key /certs/cert.key -out /certs/cert.crt -days 365 -subj "/C=US/ST=California/L=San Francisco/O=Lando/OU=KB/CN=*.lndo.site" && \
   cat /certs/cert.crt /certs/cert.key > /certs/cert.pem
 
 fi

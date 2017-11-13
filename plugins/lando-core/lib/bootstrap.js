@@ -19,7 +19,8 @@ module.exports = function(lando) {
 
     // Add init to lando
     lando.init = require('./init')(lando);
-
+    // Add certs functionality
+    lando.certs = require('./certs')(lando);
     // Load our tasks
     lando.tasks.add('config', require('./tasks/config')(lando));
     lando.tasks.add('destroy', require('./tasks/destroy')(lando));
