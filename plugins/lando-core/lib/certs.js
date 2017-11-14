@@ -1,6 +1,6 @@
 /**
-* Basic certificate handling.
-*/
+ * Basic certificate handling.
+ */
 'use strict';
 
 
@@ -11,12 +11,12 @@ module.exports = function(lando) {
 
   lando.config.env.LANDO_SSL_DIR = path.join(lando.config.userConfRoot, 'ssl');
   /**
-  * Builds a command to trust a root certificate on host OS.
-  *
-  * @return string          OS specific shell command.
-  * @param platform         OS platform according to Node runtime.
-  */
-  var trustCertCommand = function (platform) {
+   * Builds a command to trust a root certificate on host OS.
+   *
+   * @return string          OS specific shell command.
+   * @param platform         OS platform according to Node runtime.
+   */
+  var trustRootCertCommand = function (platform) {
 
     switch (platform) {
       case 'darwin':
@@ -40,11 +40,11 @@ module.exports = function(lando) {
   };
 
   /**
-  * Create SSL certificate and share to host.
-  *
-  * @return array [certPath, keyPath].
-  */
-  var createCertificate = function() {
+   * Create SSL certificate and share to host.
+   *
+   * @return array [certPath, keyPath].
+   */
+  var createRootCertificate = function () {
 
     // Some variables we'll need
     var sslConfig = path.join(__dirname, 'stubs');
@@ -65,27 +65,44 @@ module.exports = function(lando) {
     fs.copySync(sslConfig, lando.config.env.LANDO_SSL_DIR, copyOpts);
 
     // ALLTHECOMMANDS!
+
+    // private key
     var keyCmd = util.format('openssl genrsa -out %s 2048', keyPath);
 
-    var csrCmd = util.format(
-      'openssl req -new -key %s -out %s -subj "/C=/ST=/O=/localityName=/commonName=*.lndo.site/organizationalUnitName=/emailAddress=/" -config %s -passin pass:',
-      keyPath, csrPath, confPath);
+    // signing request
+    var csrCmd = util.format([
+        'openssl',
+        'req',
+        '-new',
+        '-key',
+        '%s',
+        '-out',
+        '%s',
+        '-subj',
+        '"/C=US/ST=CA/O=Lando/localityName=San Francisco/commonName=*.lndo.site/organizationalUnitName=EngineRoom/emailAddress=no-reply@example.com/" -config %s -passin pass:',
+      ].join(' '),
+      keyPath, csrPath, confPath
+    );
 
-      var certCmd = util.format(
-        'openssl x509 -req -sha256 -days 365 -in %s -signkey %s -out %s -extensions v3_req -extfile %s',
-        csrPath, keyPath, crtPath, confPath
-      );
+    // certificate
+    var certCmd = util.format(
+      'openssl x509 -req -sha256 -days 365 -in %s -signkey %s -out %s -extensions v3_req -extfile %s',
+      csrPath, keyPath, crtPath, confPath
+    );
 
-      // Form blazing sword!
-      var finalCmd = keyCmd + ' && ' + csrCmd + ' && ' + certCmd;
+    // Form blazing sword!
+    var finalCmd = keyCmd + ' && ' + csrCmd + ' && ' + certCmd;
 
-      // Generate key/cert in container
-      return lando.utils.runUtil('ssl', 'lando', finalCmd, 'root');
+    // Generate key/cert in container
+    return lando.utils.runUtil('ssl', 'lando', finalCmd, 'root');
+  };
 
-    };
+  var createServiceCertificate = function (app, service) {
 
-    return {
-      createCertificate: createCertificate,
-      trustCertCommand: trustCertCommand
-    }
+  };
+
+  return {
+    createRootCertificate: createRootCertificate,
+    trustRootCertCommand: trustRootCertCommand
   }
+}
