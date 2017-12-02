@@ -174,7 +174,7 @@ module.exports = function(lando) {
     // Get some stuff for our things
     var domain = lando.config.proxyDomain;
     var proxyDash = lando.config.proxyDash;
-    var certs = lando.certs.createCertificate().join(',');
+    var certs = ['/ssl/certs/landoProxy.crt', '/ssl/certs/landoProxy.key'].join(',');
     var cmd = [
       '/entrypoint.sh',
       '--defaultEntryPoints=https,http',
@@ -222,8 +222,7 @@ module.exports = function(lando) {
           '/var/run/docker.sock:/var/run/docker.sock',
           '/dev/null:/traefik.toml',
           '$LANDO_ENGINE_SCRIPTS_DIR/lando-entrypoint.sh:/lando-entrypoint.sh',
-          '$LANDO_ENGINE_SCRIPTS_DIR/add-cert.sh:/scripts/add-cert.sh',
-          '$LANDO_SSL_DIR/:/ssl/'
+          '$LANDO_HOST_SSL_DIR/:/ssl/'
         ],
         restart: 'on-failure'
       };
@@ -274,16 +273,15 @@ module.exports = function(lando) {
           lando.log.verbose('Proxy has changed, rebuilding');
           lando.utils.compose(proxyFile, proxy);
         }
-
       }
 
+      lando.certs.createProxyCertificate();
     })
 
     // Try to start the proxy
     .then(function() {
       return lando.engine.start(getProxy(proxyFile));
     });
-
   };
 
   /*
